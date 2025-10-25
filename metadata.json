@@ -1,0 +1,5 @@
+{
+  "name": "Management Accountant Analysis Dashboard",
+  "description": "Upload your bank statement or other financial report file in PDF format, create custom spending categories, and let AI automatically extract and help you categorize your transactions. Export your analyzed statement to an Excel-compatible CSV file.",
+  "requestFramePermissions": []
+}
