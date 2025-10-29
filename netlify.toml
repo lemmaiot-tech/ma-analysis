@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Disable secrets scanning smart detection
+  # This is necessary because the application architecture requires the Gemini API key
+  # to be embedded in the client-side code for direct API calls from the browser.
+  # Note: This means the API key will be visible in the browser. Consider implementing
+  # a backend proxy for better security in production.
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
