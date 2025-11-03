@@ -1,8 +1,10 @@
 
+
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { Transaction, Account, Session, CashbookEntry } from './types';
-import { UploadIcon, TrashIcon, DownloadIcon, PlusIcon, PencilIcon, CheckIcon, XIcon, SparklesIcon, ArrowUpDownIcon, SaveIcon, BookOpenIcon, ClipboardListIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from './components/icons';
+import { UploadIcon, TrashIcon, DownloadIcon, PlusIcon, PencilIcon, CheckIcon, XIcon, SparklesIcon, ArrowUpDownIcon, SaveIcon, BookOpenIcon, ClipboardListIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, BrainIcon } from './components/icons';
 import { getApiKey } from './utils';
 
 declare var XLSX: any; // Declare the XLSX global from the script tag in index.html
@@ -676,6 +678,88 @@ const LinkTransactionModal = ({ unreconciledTransactions, onLink, onClose }: { u
     );
 };
 
+const TextImproverModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+    const [inputText, setInputText] = useState('');
+    const [outputText, setOutputText] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleGenerate = async () => {
+        if (!inputText.trim()) return;
+        setIsLoading(true);
+        setError('');
+        setOutputText('');
+        try {
+            const ai = new GoogleGenAI({ apiKey: getApiKey() });
+            const prompt = `You are an AI assistant that refines unstructured financial text into a short, clear narration. Your goal is to create a concise sentence that captures the key information, such as the purpose of the payment, the recipient (bank/vendor), and the payer.
+Example Input: FCMB PREMIUM FEDOZ NIGERIA LIMITED-FIPIBPSF ₦ 224,035.00
+Example Output: Premium Payment to FCMB by FEDOZ LTD.
+Now, process the following text:
+"${inputText}"`;
+            
+            const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+            setOutputText(response.text.trim());
+        } catch (err) {
+            console.error("Text Improver Error:", err);
+            setError(err instanceof Error ? err.message : "An unknown error occurred.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handleCopy = () => {
+        navigator.clipboard.writeText(outputText);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[70] p-4" onClick={onClose}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale" onClick={e => e.stopPropagation()}>
+                <div className="p-6 border-b flex items-center justify-between">
+                    <h3 className="text-xl font-semibold text-slate-800 flex items-center gap-2"><SparklesIcon className="w-6 h-6 text-indigo-500" /> AI Text Assistant</h3>
+                    <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"><XIcon className="w-5 h-5" /></button>
+                </div>
+                <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-600 mb-1">Unstructured Text</label>
+                            <textarea value={inputText} onChange={e => setInputText(e.target.value)} rows={6} className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Paste your text here..."></textarea>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-600 mb-1">Generated Narration</label>
+                             <div className="w-full h-[152px] p-2 border border-slate-300 rounded-md bg-slate-50 text-sm relative">
+                                {isLoading ? (
+                                    <div className="flex items-center justify-center h-full"><div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>
+                                ) : (
+                                    <>
+                                        <p className="whitespace-pre-wrap">{outputText}</p>
+                                        {outputText && (
+                                            <button onClick={handleCopy} className="absolute top-2 right-2 p-1.5 bg-white border rounded-md text-slate-500 hover:bg-slate-100 hover:text-indigo-600">
+                                                {isCopied ? <CheckIcon className="w-4 h-4 text-green-600" /> : <ClipboardListIcon className="w-4 h-4" />}
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                             </div>
+                        </div>
+                    </div>
+                    {error && <div className="mt-4 bg-red-100 text-red-700 px-3 py-2 text-sm rounded-md" role="alert">{error}</div>}
+                </div>
+                <div className="bg-slate-50 px-6 py-4 flex justify-end items-center rounded-b-lg border-t">
+                    <button onClick={handleGenerate} disabled={!inputText.trim() || isLoading} className="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg shadow-sm hover:bg-indigo-700 transition-colors disabled:bg-slate-400 flex items-center justify-center gap-2 w-40">
+                         {isLoading ? 'Generating...' : 'Generate'}
+                    </button>
+                </div>
+            </div>
+            <style>{`@keyframes fade-in-scale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } } .animate-fade-in-scale { animation: fade-in-scale 0.2s ease-out forwards; }`}</style>
+        </div>
+    );
+};
+
 
 const App: React.FC = () => {
     // --- AI USAGE LIMITER ---
@@ -695,6 +779,8 @@ const App: React.FC = () => {
     });
     const [isChartOfAccountsModalOpen, setIsChartOfAccountsModalOpen] = useState(false);
     const [view, setView] = useState<AppView>('statement');
+    const [isTextImproverOpen, setIsTextImproverOpen] = useState(false);
+    const [isAnalystModalOpen, setIsAnalystModalOpen] = useState(false);
 
     useEffect(() => {
         try { localStorage.setItem('bankAnalyzerAccounts', JSON.stringify(accounts)); } catch (error) { console.error("Could not save accounts to local storage", error); }
@@ -811,11 +897,13 @@ const App: React.FC = () => {
                 const newTxs: Transaction[] = lines.flatMap(line => {
                     if (!line.trim()) return [];
                     try {
-                        const txData = JSON.parse(line);
-                        if (txData.date && txData.description && typeof txData.amount === 'number' && txData.type) {
-                            const noteKey = createTransactionKey(txData);
+                        // FIX: Cast the parsed JSON to handle strict TS configs where JSON.parse returns `unknown`.
+                        // Also, strengthen the check for the `type` property.
+                        const txData = JSON.parse(line) as Partial<Transaction>;
+                        if (txData.date && txData.description && typeof txData.amount === 'number' && (txData.type === 'debit' || txData.type === 'credit')) {
+                            const noteKey = createTransactionKey(txData as { date: string, description: string, amount: number, type: 'debit' | 'credit' });
                             const savedNote = localStorage.getItem(noteKey);
-                            return [{ ...txData, id: `${Date.now()}-${transactionCount++}`, accountCode: '0000', notes: savedNote ?? undefined }];
+                            return [{ ...txData, id: `${Date.now()}-${transactionCount++}`, accountCode: '0000', notes: savedNote ?? undefined } as Transaction];
                         }
                     } catch (e) { console.warn("Could not parse JSON line:", line); }
                     return [];
@@ -1123,6 +1211,23 @@ const App: React.FC = () => {
         }
     };
     
+    const handleUnlinkCashbookEntry = (entryId: string) => {
+        const entryToUnlink = cashbookEntries.find(e => e.id === entryId);
+        if (!entryToUnlink || !entryToUnlink.linkedTransactionId) return;
+
+        const linkedTxId = entryToUnlink.linkedTransactionId;
+
+        // Update transactions state: remove reconciledWith from the transaction
+        setTransactions(prevTxs => prevTxs.map(tx => 
+            tx.id === linkedTxId ? { ...tx, reconciledWith: undefined } : tx
+        ));
+
+        // Update cashbookEntries state: remove linkedTransactionId from the entry
+        setCashbookEntries(prev => prev.map(entry => 
+            entry.id === entryId ? { ...entry, linkedTransactionId: undefined } : entry
+        ));
+    };
+
     const requestCashbookSort = (key: CashbookSortKey) => {
         let direction: SortDirection = 'asc';
         if (cashbookSortConfig.key === key && cashbookSortConfig.direction === 'asc') {
@@ -1371,6 +1476,104 @@ const App: React.FC = () => {
     };
 
 
+    // --- AI Analyst Modal ---
+    const AiAnalystModal = ({ isOpen, onClose, data, dataName }: { isOpen: boolean, onClose: () => void, data: any[], dataName: string }) => {
+        const [question, setQuestion] = useState('');
+        const [answer, setAnswer] = useState('');
+        const [isLoading, setIsLoading] = useState(false);
+        const [error, setError] = useState('');
+
+        useEffect(() => {
+            if (!isOpen) { // Reset state when modal is closed
+                setQuestion(''); setAnswer(''); setError(''); setIsLoading(false);
+            }
+        }, [isOpen]);
+
+        const handleAsk = async () => {
+            if (!question.trim() || data.length === 0) return;
+            if (!tryAiFeature()) return;
+
+            setIsLoading(true);
+            setError('');
+            setAnswer('');
+            try {
+                const ai = new GoogleGenAI({ apiKey: getApiKey() });
+                const MAX_RECORDS = 200;
+                let truncatedData = data;
+                let truncationMessage = '';
+                if (data.length > MAX_RECORDS) {
+                    truncatedData = data.slice(0, MAX_RECORDS);
+                    truncationMessage = `\n\nNote: The analysis was performed on the first ${MAX_RECORDS} of ${data.length} visible records for performance reasons.`;
+                }
+
+                const prompt = `You are a helpful financial analyst. Based ONLY on the following data, which is a JSON array of ${dataName}, answer the user's question. Provide a concise but comprehensive answer. Format your response clearly using paragraphs, lists, or bold text as needed. If the question cannot be answered from the data, state that clearly.
+
+                Data:
+                \`\`\`json
+                ${JSON.stringify(truncatedData, null, 2)}
+                \`\`\`
+
+                User's Question: "${question}"`;
+                
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                setAnswer(response.text.trim() + truncationMessage);
+            } catch (err) {
+                console.error("AI Analyst Error:", err);
+                setError(err instanceof Error ? err.message : "An unknown error occurred while analyzing the data.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[70] p-4" onClick={onClose}>
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl h-[80vh] flex flex-col transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale" onClick={e => e.stopPropagation()}>
+                    <div className="p-6 border-b flex items-center justify-between flex-shrink-0">
+                        <h3 className="text-xl font-semibold text-slate-800 flex items-center gap-2"><BrainIcon className="w-6 h-6 text-indigo-500" /> AI Financial Analyst</h3>
+                        <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"><XIcon className="w-5 h-5" /></button>
+                    </div>
+                    <div className="flex-grow p-6 overflow-y-auto">
+                        <label htmlFor="ai-analyst-answer" className="text-sm font-medium text-slate-600">Answer</label>
+                        <div id="ai-analyst-answer" className="mt-1 w-full h-full min-h-[200px] p-3 border border-slate-300 rounded-md bg-slate-50 text-sm whitespace-pre-wrap overflow-y-auto">
+                            {isLoading ? (
+                                <div className="flex items-center justify-center h-full text-slate-500 gap-2">
+                                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                    <span>Analyzing your data...</span>
+                                </div>
+                            ) : error ? (
+                                <div className="text-red-600">{error}</div>
+                            ) : answer ? (
+                                <p>{answer}</p>
+                            ) : (
+                                <div className="text-slate-500 h-full flex items-center justify-center">
+                                    <p className="text-center">Ask a question about the currently visible {dataName} to get started.<br/>e.g., "What is the sum of all debits?" or "List all transactions related to 'supplies'".</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="bg-slate-50 px-6 py-4 flex-shrink-0 border-t">
+                        <div className="flex items-start gap-4">
+                            <textarea 
+                                value={question} 
+                                onChange={e => setQuestion(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAsk(); } }}
+                                rows={3} 
+                                className="flex-grow p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm" 
+                                placeholder={`Ask a question about the ${data.length} visible ${dataName}...`}
+                            />
+                            <button onClick={handleAsk} disabled={!question.trim() || isLoading} className="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg shadow-sm hover:bg-indigo-700 transition-colors disabled:bg-slate-400 flex items-center justify-center gap-2 h-[76px]">
+                                {isLoading ? 'Thinking...' : 'Ask'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <style>{`@keyframes fade-in-scale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } } .animate-fade-in-scale { animation: fade-in-scale 0.2s ease-out forwards; }`}</style>
+            </div>
+        );
+    };
+
     // --- RENDER LOGIC ---
 
     const SortableHeader = ({ label, sortKey }: { label: string, sortKey: keyof Transaction }) => (
@@ -1475,6 +1678,9 @@ const App: React.FC = () => {
                             <ClipboardListIcon className="w-5 h-5" /> <span className="hidden sm:inline">Cashbook Entry</span>
                         </button>
                     </div>
+                     <button onClick={() => setIsAnalystModalOpen(true)} className="bg-white text-slate-700 border border-slate-300 font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
+                        <BrainIcon className="w-5 h-5"/> <span className="hidden sm:inline">Ask AI Analyst</span>
+                    </button>
                      <button onClick={() => setIsChartOfAccountsModalOpen(true)} className="bg-white text-slate-700 border border-slate-300 font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
                         <BookOpenIcon className="w-5 h-5"/> <span className="hidden sm:inline">Chart of Accounts</span>
                     </button>
@@ -1664,7 +1870,7 @@ const App: React.FC = () => {
                                <CashbookSortableHeader label="Amount" sortKey="amount" />
                                <th className="px-4 py-3">Type</th>
                                <CashbookSortableHeader label="Account" sortKey="accountId" />
-                               <th className="px-4 py-3">Linked Tx</th>
+                               <th className="px-4 py-3">Status</th>
                                <th className="px-4 py-3">Actions</th>
                            </tr>
                        </thead>
@@ -1683,9 +1889,14 @@ const App: React.FC = () => {
                                </td>
                                <td className="px-4 py-3 whitespace-nowrap" title={accounts.find(a => a.code === entry.accountId)?.name}>{entry.accountId}</td>
                                <td className="px-4 py-3">
-                                   {entry.linkedTransactionId ? 
-                                    <span title={transactions.find(t=>t.id === entry.linkedTransactionId)?.description} className="cursor-help"><CheckIcon className="w-5 h-5 text-teal-500" /></span> : 
-                                    <span className="text-slate-400">-</span>}
+                                   {entry.linkedTransactionId ? (
+                                        <div className="flex items-center gap-2">
+                                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-800">Reconciled</span>
+                                            <button onClick={() => handleUnlinkCashbookEntry(entry.id)} className="text-xs font-semibold text-red-600 hover:text-red-800" title="Unlink transaction">Unlink</button>
+                                        </div>
+                                    ) : (
+                                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">Unreconciled</span>
+                                    )}
                                </td>
                                <td className="px-4 py-3">
                                    <div className="flex items-center">
@@ -1707,13 +1918,21 @@ const App: React.FC = () => {
                            <div className="flex items-start justify-between">
                                <div>
                                    <p className="font-medium text-slate-900">{entry.date}</p>
-                                   <p className={`font-semibold text-lg ${entry.debit > 0 ? 'text-red-600' : 'text-green-600'}`}>{currencyFormatter.format(entry.debit > 0 ? entry.debit : entry.credit)}</p>
+                                   <p className={`font-semibold text-lg ${entry.debit > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                       {currencyFormatter.format(entry.debit > 0 ? entry.debit : entry.credit)}
+                                       <span className="text-xs ml-1">({entry.debit > 0 ? 'Debit' : 'Credit'})</span>
+                                   </p>
                                </div>
-                               {entry.linkedTransactionId ? (
-                                <span className="flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-800"><CheckIcon className="w-4 h-4"/> Linked</span>
-                               ) : (
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${entry.debit > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>{entry.debit > 0 ? 'Debit' : 'Credit'}</span>
-                               )}
+                               <div>
+                                    {entry.linkedTransactionId ? (
+                                        <div className="flex items-center gap-2">
+                                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-800">Reconciled</span>
+                                            <button onClick={() => handleUnlinkCashbookEntry(entry.id)} className="text-xs font-semibold text-red-600 hover:text-red-800">Unlink</button>
+                                        </div>
+                                    ) : (
+                                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">Unreconciled</span>
+                                    )}
+                                </div>
                            </div>
                            <p className="text-sm text-slate-600" title={entry.description}>{entry.description}</p>
                            <p className="text-sm"><span className="font-medium text-slate-500">Account:</span> {entry.accountId} - {accounts.find(a => a.code === entry.accountId)?.name || 'N/A'}</p>
@@ -1826,6 +2045,13 @@ const App: React.FC = () => {
             {editingCashbookEntry && <CashbookEditModal entry={editingCashbookEntry} accounts={accounts} onSave={handleUpdateCashbookEntry} onClose={() => setEditingCashbookEntry(null)} onOpenLinkModal={handleOpenLinkModal} onUnlink={handleUnlinkTransaction} transactions={transactions} />}
             {editingCashbookNoteEntry && <CashbookNoteModal entry={editingCashbookNoteEntry} onSave={handleSaveCashbookNote} onClose={() => setEditingCashbookNoteEntry(null)} />}
             {isLinkTxModalOpen && <LinkTransactionModal unreconciledTransactions={unreconciledTransactions} onLink={handleSelectTransactionToLink} onClose={() => setIsLinkTxModalOpen(false)} />}
+            <TextImproverModal isOpen={isTextImproverOpen} onClose={() => setIsTextImproverOpen(false)} />
+            <AiAnalystModal
+                isOpen={isAnalystModalOpen}
+                onClose={() => setIsAnalystModalOpen(false)}
+                data={view === 'statement' ? filteredAndSortedTransactions : sortedCashbookEntries}
+                dataName={view === 'statement' ? 'transactions' : 'cashbook entries'}
+            />
             
             {view === 'statement' && <FilterPanel
                 isOpen={isFilterPanelOpen}
@@ -1844,6 +2070,16 @@ const App: React.FC = () => {
                     {view === 'statement' ? renderStatementView() : renderCashbookView()}
                 </div>
             </div>
+
+            <button
+                onClick={() => setIsTextImproverOpen(true)}
+                className="fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                title="AI Text Assistant"
+                aria-label="Open AI Text Assistant"
+            >
+                <SparklesIcon className="w-6 h-6" />
+            </button>
+
             <style>{`@keyframes fade-in-fast { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } } .animate-fade-in-fast { animation: fade-in-fast 0.1s ease-out forwards; }`}</style>
         </>
     );
