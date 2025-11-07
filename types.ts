@@ -4,9 +4,8 @@ export interface Transaction {
   description: string;
   amount: number;
   type: 'debit' | 'credit';
-  accountCode: string;
+  reconciliationStatus?: 'posted' | 'unposted';
   notes?: string;
-  reconciledWith?: string;
 }
 
 export interface Account {
@@ -14,29 +13,42 @@ export interface Account {
   code: string;
   name: string;
   type: string;
+  isBankAccount?: boolean;
+}
+
+export interface ReconciledTransaction {
+    id: string; // Composite key: date-desc-amount-type
+    period: string; // YYYY-MM
+    bankAccountId: string;
+    journalEntryId: string;
+    originalDate: string;
+    originalDescription: string;
+    originalAmount: number;
+    originalType: 'debit' | 'credit';
 }
 
 export interface Session {
   id: string;
-  name: string;
+  period: string; // YYYY-MM
   timestamp: number;
-  transactions: Transaction[];
   accounts: Account[];
+  journalEntries: JournalEntry[];
+  reconciledTransactions: ReconciledTransaction[];
 }
 
-export interface CashbookEntry {
-  id: string;
-  date: string;
-  reference: string;
-  description: string;
+export interface JournalLine {
+  id: string; // For React keys
   accountId: string;
   debit: number;
   credit: number;
-  bankAccountId: string;
-  department: string;
-  taxCode: string;
-  vendor: string;
-  memoReference: string;
+  description?: string;
+}
+
+export interface JournalEntry {
+  id: string;
+  date: string;
+  description: string; // Narration
+  refNo?: string;
+  lines: JournalLine[];
   notes?: string;
-  linkedTransactionId?: string;
 }

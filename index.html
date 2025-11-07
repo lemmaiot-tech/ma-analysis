@@ -1,43 +1,76 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Management Accountant Dashboard by neka.ng</title>
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/neka-fav.png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AI Management Accountant Dashboard by neka.ng</title>
 
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="An AI-powered dashboard for management accountants. Upload PDF bank statements, auto-extract transactions, create cashbook entries from memos, and export to CSV. A product of neka.ng." />
-    <meta name="keywords" content="accounting, management accountant, AI, bank statement analysis, PDF to CSV, transaction categorization, cashbook, financial analysis, bookkeeping, neka.ng, fintech" />
-    <meta name="author" content="neka.ng">
+        <!-- SEO Meta Tags -->
+        <meta
+            name="description"
+            content="An AI-powered dashboard for management accountants. Upload PDF bank statements, auto-extract transactions, create cashbook entries from memos, and export to CSV. A product of neka.ng."
+        />
+        <meta
+            name="keywords"
+            content="accounting, management accountant, AI, bank statement analysis, PDF to CSV, transaction categorization, cashbook, financial analysis, bookkeeping, neka.ng, fintech"
+        />
+        <meta name="author" content="neka.ng" />
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="AI Management Accountant Dashboard by neka.ng">
-    <meta property="og:description" content="Automate bank statement analysis and cashbook entries with AI. Upload PDFs, categorize transactions, and export data effortlessly.">
-    <meta property="og:site_name" content="neka.ng">
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta
+            property="og:title"
+            content="AI Management Accountant Dashboard by neka.ng"
+        />
+        <meta
+            property="og:description"
+            content="Automate bank statement analysis and cashbook entries with AI. Upload PDFs, categorize transactions, and export data effortlessly."
+        />
+        <meta property="og:site_name" content="neka.ng" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:title" content="AI Management Accountant Dashboard by neka.ng">
-    <meta property="twitter:description" content="Automate bank statement analysis and cashbook entries with AI. Upload PDFs, categorize transactions, and export data effortlessly.">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
-<body class="bg-slate-50">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-</body>
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta
+            property="twitter:title"
+            content="AI Management Accountant Dashboard by neka.ng"
+        />
+        <meta
+            property="twitter:description"
+            content="Automate bank statement analysis and cashbook entries with AI. Upload PDFs, categorize transactions, and export data effortlessly."
+        />
+
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+        <script type="importmap">
+            {
+                "imports": {
+                    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+                    "react": "https://aistudiocdn.com/react@^19.2.0",
+                    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0",
+                    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+                    "pdfjs-dist": "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs"
+                }
+            }
+        </script>
+        <script>
+            // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+            if (
+                localStorage.theme === "dark" ||
+                (!("theme" in localStorage) &&
+                    window.matchMedia("(prefers-color-scheme: dark)").matches)
+            ) {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        </script>
+        <link rel="stylesheet" href="/index.css" />
+    </head>
+    <body
+        class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+    >
+        <div id="root"></div>
+        <script type="module" src="/index.tsx"></script>
+    </body>
 </html>
