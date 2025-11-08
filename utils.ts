@@ -1,5 +1,11 @@
 // A simple utility to get the API key. In a real app, this would be more secure.
-export const getApiKey = () => process.env.API_KEY;
+export const getApiKey = () => {
+    const key = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!key) {
+        throw new Error('VITE_GEMINI_API_KEY is not configured. Please set it as an environment variable.');
+    }
+    return key;
+};
 
 export const currencyFormatter = (amount: number) => new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 
